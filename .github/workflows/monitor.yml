@@ -2,9 +2,9 @@ name: MiWuLa KiTa Monitor
 
 on:
   # Automatische Prüfung alle 15 Minuten
-  schedule:
-    - cron: "7/5 * * * *"
-      timezone: "Europe/Berlin"
+  # schedule:
+  #   - cron: "7/5 * * * *"
+  #     timezone: "Europe/Berlin"
   workflow_dispatch:
 
 
