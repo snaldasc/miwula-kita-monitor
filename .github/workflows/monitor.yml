@@ -137,8 +137,8 @@ Bitte den GitHub Actions Run prüfen."
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
-          sleep 300
+          echo "Warte 30 Sekunden (.5 Minuten) bis zum nächsten Check..."
+          sleep 30
           
           echo "Sende Rerun-Signal an GitHub API..."
           curl -f -X POST \
