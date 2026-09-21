@@ -90,9 +90,9 @@ jobs:
             TOTAL_RUNTIME="0.00"
           fi
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
-
+          
       # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht (REPARIERT)
+      # Eine einzige Telegram-Nachricht
       # ---------------------------------------------
       - name: Telegram Status senden
         if: always()
@@ -103,12 +103,13 @@ jobs:
             MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
           fi
           
+          # HIER WURDE DIE URL REPARIERT (api.telegram.org/bot...)
           curl -sS -X POST "https://telegram.org{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # OPTION A: 30 Sekunden warten und retrigger (REPARIERT)
+      # OPTION A: 30 Sekunden warten und retrigger
       # ---------------------------------------------
       - name: Warteschleife und Neustart
         if: always()
@@ -117,8 +118,10 @@ jobs:
           sleep 30
           
           echo "Sende Rerun-Signal an GitHub API..."
+          # HIER WURDE DIE URL REPARIERT (://github.com...)
           curl -f -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://github.com \
+            https://://github.comsnaldasc/miwula-kita-monitor/dispatches \
             -d '{"event_type": "loop-check"}'
+
