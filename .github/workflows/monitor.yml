@@ -131,18 +131,18 @@ Bitte den GitHub Actions Run prüfen."
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
-      # ---------------------------------------------
+           # ---------------------------------------------
       # OPTION A: 5 Minuten warten und den nächsten Run triggern
       # ---------------------------------------------
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 30 Sekunden (.5 Minuten) bis zum nächsten Check..."
+          echo "Warte 30 Sekunden (0.5 Minuten) bis zum nächsten Check..."
           sleep 30
           
           echo "Sende Rerun-Signal an GitHub API..."
           curl -f -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://github.com{{ github.repository }}/dispatches \
+            https://github.com \
             -d '{"event_type": "loop-check"}'
