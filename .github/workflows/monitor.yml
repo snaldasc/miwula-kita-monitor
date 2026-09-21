@@ -56,4 +56,5 @@ jobs:
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -d '{"event_type": "loop-check"}' \
-            "https://github.com"
+            "https://api.github.com/repos/snaldasc/miwula-kita-monitor/dispatches
+"
