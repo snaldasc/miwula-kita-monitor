@@ -3,6 +3,10 @@ name: MiWuLa KiTa Monitor
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: "0 * * * *"
+
+
 jobs:
   check-kita:
     runs-on: ubuntu-latest
