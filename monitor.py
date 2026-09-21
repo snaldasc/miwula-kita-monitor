@@ -136,14 +136,14 @@ if __name__ == "__main__":
         # AUTOMATISCHER TELEGRAM & GITHUB DISPATCH RERUN
         # ==================================================
         # HIER DEINE GEFUNDENE ZAHLEN-ID VOM CLICKALGO-FINDER EINTRAGEN:
-        CHAT_ID = "HIER_DEINE_REINE_NUMMERN_CHAT_ID_EINTRAGEN"
+        CHAT_ID = "5866136191"
         BOT_TOKEN = "8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI"
         loop_token = os.environ.get("LOOP_TOKEN")
 
         # Telegram Nachricht absenden
         if CHAT_ID != "5866136191":
             msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
-            telegram_url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
+            telegram_url = f"https://api.telegram.org/8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI/sendMessage"
             try:
                 res = requests.post(telegram_url, data={"chat_id": CHAT_ID, "text": msg})
                 if res.status_code == 200:
