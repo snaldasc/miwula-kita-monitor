@@ -59,7 +59,7 @@ jobs:
       # ---------------------------------------------
       # Zustand speichern
       # ---------------------------------------------
-      - name: Zustand保存 (Zustand speichern)
+      - name: Zustand speichern
         if: success()
         run: |
           git config user.name "github-actions[bot]"
@@ -75,7 +75,7 @@ jobs:
           fi
 
       # ---------------------------------------------
-      # Gesamtlaufzeit berechnen (Sichere Bash-Variante)
+      # Gesamtlaufzeit berechnen
       # ---------------------------------------------
       - name: Gesamtlaufzeit berechnen
         if: always()
@@ -127,17 +127,17 @@ Bitte den GitHub Actions Run prüfen."
 
           curl -sS \
             -X POST \
-            "https://telegram.org{TELEGRAM_8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI}/sendMessage" \
+            "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
-           # ---------------------------------------------
-      # OPTION A: 5 Minuten warten und den nächsten Run triggern
+      # ---------------------------------------------
+      # OPTION A: 30 Sekunden warten und retrigger (Zum Testen)
       # ---------------------------------------------
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 30 Sekunden (0.5 Minuten) bis zum nächsten Check..."
+          echo "Warte 30 Sekunden bis zum nächsten Check..."
           sleep 30
           
           echo "Sende Rerun-Signal an GitHub API..."
