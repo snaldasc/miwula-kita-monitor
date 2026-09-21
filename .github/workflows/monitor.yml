@@ -2,6 +2,8 @@ name: MiWuLa KiTa Monitor
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
   repository_dispatch:
     types: [loop-check]
@@ -64,7 +66,7 @@ jobs:
         if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@://github.com"
 
           git add state.json
 
@@ -103,7 +105,9 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MESSAGE="🟢 MiWuLa KiTa Monitor Prüfung erfolgreich.
+            MESSAGE="🟢 MiWuLa KiTa Monitor
+
+Prüfung erfolgreich.
 
 📅 Termine gefunden: ${{ steps.monitor.outputs.appointments }}
 🆕 Neue Termine: ${{ steps.monitor.outputs.new_appointments }}
@@ -113,11 +117,15 @@ jobs:
 
 🔢 GitHub Run: ${{ github.run_number }}"
           else
-            MESSAGE="🔴 MiWuLa KiTa Monitor FEHLER beim Ausführen.
+            MESSAGE="🔴 MiWuLa KiTa Monitor
+
+FEHLER beim Ausführen.
 
 ⏱️ Gesamt: ${{ env.TOTAL_RUNTIME }} Sekunden
 
-🔢 GitHub Run: ${{ github.run_number }} Bitte den GitHub Actions Run prüfen."
+🔢 GitHub Run: ${{ github.run_number }}
+
+Bitte den GitHub Actions Run prüfen."
           fi
 
           curl -sS \
@@ -127,13 +135,13 @@ jobs:
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # OPTION A: 30 Sekunden warten und retrigger (Zum Testen)
+      # OPTION A: 5 Minuten warten und retrigger
       # ---------------------------------------------
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 30 Sekunden bis zum nächsten Check..."
-          sleep 30
+          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
+          sleep 300
           
           echo "Sende Rerun-Signal an GitHub API..."
           curl -f -X POST \
