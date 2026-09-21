@@ -57,8 +57,9 @@ def check_kita_page():
 
 
 def send_email():
-    smtp_host = os.environ["SMTP_HOST"]
-    smtp_port = int(os.environ["SMTP_PORT"])
+    smtp_host = "smtp.gmail.com"
+    smtp_port = 587
+    
     smtp_user = os.environ["SMTP_USER"]
     smtp_password = os.environ["SMTP_PASSWORD"]
     mail_to = os.environ["MAIL_TO"]
