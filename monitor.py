@@ -143,7 +143,7 @@ if __name__ == "__main__":
         # Telegram Nachricht absenden
         if CHAT_ID != "5866136191":
             msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
-            telegram_url = f"https://api.telegram.org/8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI/sendMessage"
+            telegram_url = f"https://api.telegram.org/bot8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI/sendMessage"
             try:
                 res = requests.post(telegram_url, data={"chat_id": CHAT_ID, "text": msg})
                 if res.status_code == 200:
