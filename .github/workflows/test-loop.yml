@@ -15,12 +15,14 @@ jobs:
           sleep 5
 
       - name: Sende Rerun an GitHub API
+        env:
+          # Wir bauen die URL sicher als GitHub-Variable außerhalb der Bash zusammen
+          API_URL: "https://github.com{{ github.repository }}/dispatches"
         run: |
-          echo "Sende Signal mit LOOP_TOKEN..."
+          echo "Sende Signal mit LOOP_TOKEN an $API_URL..."
           
-          # AUTOMATISCHE URL: ://github.com... wird von GitHub selbst ausgefüllt
           curl -f -v -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://://github.com${{ github.repository }}/dispatches \
-            -d '{"event_type": "test-loop-check"}'
+            -d '{"event_type": "test-loop-check"}' \
+            "$API_URL"
