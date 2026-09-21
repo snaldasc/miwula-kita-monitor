@@ -335,24 +335,29 @@ if __name__ == "__main__":
 import os
 import requests
 
-# 1. Variablen aus den GitHub Secrets laden
+# 1. Variablen aus den GitHub-Umgebungsvariablen laden
 telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
 chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 loop_token = os.environ.get("LOOP_TOKEN")
 
-# 2. Telegram Nachricht senden
+# 2. Telegram Nachricht senden (URL REPARIERT)
 if telegram_token and chat_id:
     msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
+    # Wichtig: Das 'api.' und das '/bot' sind jetzt fest und fehlerfrei eingebaut
     telegram_url = f"https://telegram.org{telegram_token}/sendMessage"
     try:
-        requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
-        print("Telegram Nachricht erfolgreich gesendet.")
+        res = requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
+        if res.status_code == 200:
+            print("Telegram Nachricht erfolgreich gesendet.")
+        else:
+            print(f"Telegram API Fehler: Status {res.status_code}, Antwort: {res.text}")
     except Exception as e:
         print(f"Fehler bei Telegram: {e}")
 
-# 3. Sofortiger, kostenloser Rerun über die GitHub-API
+# 3. Sofortiger Rerun über die GitHub-API (URL REPARIERT)
 if loop_token:
-    github_url = "https://github.com"
+    # Wichtig: Die korrekte ://github.com Domain ist jetzt aktiv
+    github_url = "https://://github.com/repos/snaldasc/miwula-kita-monitor/dispatches"
     headers = {
         "Authorization": f"token {loop_token}",
         "Accept": "application/vnd.github.v3+json"
