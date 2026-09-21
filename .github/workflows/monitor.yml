@@ -103,9 +103,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MESSAGE="🟢 MiWuLa KiTa Monitor
-
-Prüfung erfolgreich.
+            MESSAGE="🟢 MiWuLa KiTa Monitor Prüfung erfolgreich.
 
 📅 Termine gefunden: ${{ steps.monitor.outputs.appointments }}
 🆕 Neue Termine: ${{ steps.monitor.outputs.new_appointments }}
@@ -115,15 +113,11 @@ Prüfung erfolgreich.
 
 🔢 GitHub Run: ${{ github.run_number }}"
           else
-            MESSAGE="🔴 MiWuLa KiTa Monitor
-
-FEHLER beim Ausführen.
+            MESSAGE="🔴 MiWuLa KiTa Monitor FEHLER beim Ausführen.
 
 ⏱️ Gesamt: ${{ env.TOTAL_RUNTIME }} Sekunden
 
-🔢 GitHub Run: ${{ github.run_number }}
-
-Bitte den GitHub Actions Run prüfen."
+🔢 GitHub Run: ${{ github.run_number }} Bitte den GitHub Actions Run prüfen."
           fi
 
           curl -sS \
