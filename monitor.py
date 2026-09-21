@@ -19,19 +19,15 @@ def check_kita_page():
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    text = soup.get_text(" ", strip=True)
-
     print("Seite erfolgreich abgerufen.")
-    print()
+    print("=" * 60)
 
-    if "Ups, Ihr seid zu früh dran!" in text:
-        print("STATUS: Noch keine KiTa-Termine veröffentlicht.")
-    else:
-        print("STATUS: Die Seite hat sich verändert!")
-        print()
-        print("Bitte Termine prüfen.")
+    # Den sichtbaren Text der Seite ausgeben
+    text = soup.get_text("\n", strip=True)
 
-    print()
+    print(text)
+
+    print("=" * 60)
     print("Seitenlänge:", len(response.text), "Zeichen")
 
 
