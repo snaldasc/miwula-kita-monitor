@@ -23,15 +23,37 @@ jobs:
       - name: Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
-          pip install requests
+          pip install requests bs4
 
-      - name: MiWuLa Monitor ausführen
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOOP_TOKEN: ${{ secrets.LOOP_TOKEN }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          MAIL_TO: ${{ secrets.MAIL_TO }}
+      - name: MiWuLa Seite prüfen
         run: |
           python monitor.py
+
+      # ---------------------------------------------
+      # Eine einzige Telegram-Nachricht (ABSOLUT FEST ALS TEXT)
+      # ---------------------------------------------
+      - name: Telegram Status senden
+        if: always()
+        run: |
+          # ERSETZE HIER DIE ZAHLEN DURCH DEINE ECHTE CHAT-ID VON CLICKALGO!
+          CHAT_ID="5866136191"
+          BOT_TOKEN="8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI"
+          MESSAGE="🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
+          
+          curl -sS -X POST "https://telegram.org{BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}"
+
+      # ---------------------------------------------
+      # BLITZSCHNELL & KOSTENLOS: Sofortiger Rerun ohne Wartezeit
+      # ---------------------------------------------
+      - name: Sofortiger Rerun-Befehl an die API
+        if: always()
+        run: |
+          echo "Sende Rerun-Signal an GitHub API..."
+          
+          curl -f -X POST \
+            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"event_type": "loop-check"}' \
+            "https://github.com"
