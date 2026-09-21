@@ -252,6 +252,59 @@ def send_telegram_heartbeat():
     except requests.RequestException as error:
         print(f"📱 Fehler beim Telegram-Heartbeat: {error}")
 
+def send_test_email():
+    smtp_host = "smtp.gmail.com"
+    smtp_port = 587
+
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    mail_to = os.environ.get("MAIL_TO", "")
+
+    if not smtp_user:
+        raise RuntimeError("SMTP_USER fehlt.")
+
+    if not smtp_password:
+        raise RuntimeError("SMTP_PASSWORD fehlt.")
+
+    if not mail_to:
+        raise RuntimeError("MAIL_TO fehlt.")
+
+    message = EmailMessage()
+
+    message["Subject"] = "🧪 MiWuLa Monitor – E-Mail-Test"
+    message["From"] = smtp_user
+    message["To"] = mail_to
+
+    message.set_content(
+        """Hallo,
+
+dies ist eine Test-E-Mail des MiWuLa KiTa Monitors.
+
+Der SMTP-E-Mail-Versand funktioniert.
+
+Viele Grüße
+MiWuLa KiTa Monitor
+"""
+    )
+
+    print("📧 Sende Test-E-Mail...")
+
+    with smtplib.SMTP(
+        smtp_host,
+        smtp_port,
+        timeout=30
+    ) as server:
+
+        server.starttls()
+
+        server.login(
+            smtp_user,
+            smtp_password
+        )
+
+        server.send_message(message)
+
+    print("📧 Test-E-Mail erfolgreich gesendet.")
 
 def main():
     start_time = time.perf_counter()
@@ -339,10 +392,9 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-        send_email(new_appointments)
-        send_telegram(new_appointments)
+    sened_test_email()
+    # try:
+    #     main()
 
     except Exception as error:
         print("🔴 FEHLER:")
