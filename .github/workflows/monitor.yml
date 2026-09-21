@@ -89,8 +89,9 @@ jobs:
           fi
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
 
-       # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht (KOMPLETT REPARIERT)
+
+      # ---------------------------------------------
+      # Eine einzige Telegram-Nachricht
       # ---------------------------------------------
       - name: Telegram Status senden
         if: always()
@@ -101,22 +102,20 @@ jobs:
             MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
           fi
           
-          # api.telegram.org und /bot wurden sauber hinzugefügt
-          curl -sS -X POST "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+          curl -sS -X POST "https://telegram.org{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # KOSTENSPAREND: Rerun-Signal an die API (KOMPLETT REPARIERT)
+      # KOSTENSPAREND: Rerun-Signal an die API
       # ---------------------------------------------
       - name: Sofortiger Rerun-Befehl an die API
         if: always()
         run: |
           echo "Sende Rerun-Signal an GitHub API..."
           
-          # Die korrekte ://github.com Subdomain wurde fest eingebaut
           curl -f -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://://github.com/repos/snaldasc/miwula-kita-monitor/dispatches \
-            -d '{"event_type": "loop-check"}'
+            -d '{"event_type": "loop-check"}' \
+            "https://github.com"
