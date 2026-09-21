@@ -323,26 +323,30 @@ if __name__ == "__main__":
         main()
         
         # ==================================================
-        # AB HIER REPARIERTE UND GEPRÜFTE TELEGRAM & RERUN LOGIK
+        # LÖSUNG OHNE SECRETS: DIREKTE TEXT-WERTE
         # ==================================================
-        telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+        # Trage hier dein echtes Token ein (Beispiel von vorhin):
+        echtes_telegram_token = "8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI"
+        
+        # Holen der restlichen Variablen aus der GitHub-Umgebung
         chat_id = os.environ.get("TELEGRAM_CHAT_ID")
         loop_token = os.environ.get("LOOP_TOKEN")
 
-        # 1. Telegram Nachricht absenden
-        if telegram_token and chat_id:
+        # 1. Telegram Nachricht absenden (Absolut sichere URL-Generierung)
+        if chat_id:
             msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
-            telegram_url = f"https://telegram.org{telegram_token}/sendMessage"
+            telegram_url = f"https://telegram.org{echtes_telegram_token}/sendMessage"
+            
             try:
                 res = requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
                 if res.status_code == 200:
                     print("Telegram Nachricht erfolgreich gesendet.")
                 else:
-                    print(f"Telegram API Fehler: Status {res.status_code}")
+                    print(f"Telegram API Fehler: Status {res.status_code}, Antwort: {res.text}")
             except Exception as e:
                 print(f"Fehler bei Telegram: {e}")
 
-        # 2. GitHub Loop triggern (Kostensparend ohne Wartezeit)
+        # 2. GitHub Loop triggern
         if loop_token:
             github_url = "https://github.com"
             headers = {
@@ -360,3 +364,4 @@ if __name__ == "__main__":
         print("🔴 FEHLER:")
         print(str(error))
         raise
+
