@@ -22,13 +22,22 @@ def check_kita_page():
     print("Seite erfolgreich abgerufen.")
     print("=" * 60)
 
-    # Den sichtbaren Text der Seite ausgeben
-    text = soup.get_text("\n", strip=True)
+    # Alle Links der Seite anzeigen
+    links = soup.find_all("a")
 
-    print(text)
+    print(f"Gefundene Links: {len(links)}")
+    print()
+
+    for link in links:
+        text = link.get_text(" ", strip=True)
+        href = link.get("href")
+
+        if text or href:
+            print(f"TEXT: {text}")
+            print(f"HREF: {href}")
+            print("-" * 40)
 
     print("=" * 60)
-    print("Seitenlänge:", len(response.text), "Zeichen")
 
 
 if __name__ == "__main__":
