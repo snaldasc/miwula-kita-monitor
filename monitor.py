@@ -1,4 +1,7 @@
 import json
+import os
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
 
 import requests
@@ -53,6 +56,41 @@ def check_kita_page():
     return status
 
 
+def send_email():
+    smtp_host = os.environ["SMTP_HOST"]
+    smtp_port = int(os.environ["SMTP_PORT"])
+    smtp_user = os.environ["SMTP_USER"]
+    smtp_password = os.environ["SMTP_PASSWORD"]
+    mail_to = os.environ["MAIL_TO"]
+
+    message = EmailMessage()
+
+    message["Subject"] = "🚨 MiWuLa KiTa-Termine veröffentlicht!"
+    message["From"] = smtp_user
+    message["To"] = mail_to
+
+    message.set_content(
+        f"""Hallo,
+
+auf der MiWuLa-KiTa-Seite wurden offenbar neue Termine veröffentlicht.
+
+Bitte prüfe die Seite:
+
+{URL}
+
+Viele Grüße
+Dein MiWuLa KiTa Monitor
+"""
+    )
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(message)
+
+    print("E-Mail erfolgreich versendet.")
+
+
 def main():
     current_status = check_kita_page()
     previous_state = load_previous_state()
@@ -69,12 +107,18 @@ def main():
     print(f"Aktueller Status:  {current_status}")
     print()
 
-    if previous_status is None:
-        print("Erster Lauf.")
-    elif previous_status != current_status:
+    status_changed = (
+        previous_status is not None
+        and previous_status != current_status
+    )
+
+    if status_changed:
         print("⚠️ STATUSÄNDERUNG ERKANNT!")
+
+        if current_status == "TERMINES_AVAILABLE":
+            send_email()
     else:
-        print("Keine Änderung.")
+        print("Keine relevante Änderung.")
 
     save_state(current_status)
 
