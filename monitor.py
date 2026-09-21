@@ -60,7 +60,6 @@ def check_kita_page():
 
     appointments = []
 
-    # Links auf der Seite durchsuchen
     for link in soup.find_all("a", href=True):
         text = link.get_text(" ", strip=True)
         href = urljoin(URL, link["href"])
@@ -68,10 +67,6 @@ def check_kita_page():
         if not text:
             continue
 
-        # Datumsformate erkennen:
-        # 01.12.2026
-        # 1.12.2026
-        # 01.12.
         date_matches = re.findall(
             r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b",
             text
@@ -83,8 +78,6 @@ def check_kita_page():
                 "url": href
             })
 
-    # Falls keine Datumslinks gefunden wurden:
-    # gesamten Seitentext durchsuchen
     if not appointments:
         text = soup.get_text(
             " ",
@@ -102,7 +95,6 @@ def check_kita_page():
                 "url": URL
             })
 
-    # Duplikate entfernen
     unique_appointments = []
     seen = set()
 
@@ -147,8 +139,7 @@ def send_telegram(message):
     response.raise_for_status()
 
     print(
-        "📱 Telegram-Nachricht "
-        "erfolgreich gesendet."
+        "📱 Telegram-Nachricht erfolgreich gesendet."
     )
 
 
@@ -239,7 +230,7 @@ def format_runtime(seconds):
 
 
 def main():
-    # Start der Python-Laufzeit
+    # Startzeit nur für monitor.py
     python_start = time.perf_counter()
 
     current_appointments = (
@@ -260,10 +251,7 @@ def main():
             )
         )
 
-    print(
-        "MiWuLa KiTa Monitor"
-    )
-
+    print("MiWuLa KiTa Monitor")
     print("=" * 50)
 
     print(
@@ -278,7 +266,6 @@ def main():
 
     print()
 
-    # Gefundene Termine ausgeben
     for appointment in current_appointments:
         print(
             f"TERMIN: "
@@ -292,21 +279,17 @@ def main():
 
         print("-" * 50)
 
-    # Vorherige Termine als Schlüssel
     previous_keys = {
         (
             appointment["text"],
             appointment["url"]
         )
-        for appointment
-        in previous_appointments
+        for appointment in previous_appointments
     }
 
-    # Nur neue Termine
     new_appointments = [
         appointment
-        for appointment
-        in current_appointments
+        for appointment in current_appointments
         if (
             appointment["text"],
             appointment["url"]
@@ -319,7 +302,6 @@ def main():
         print(
             "🚨 NEUE TERMINE ERKANNT!"
         )
-        print()
 
         for appointment in new_appointments:
             print(
@@ -330,59 +312,21 @@ def main():
                 f"  {appointment['url']}"
             )
 
-        # E-Mail senden
+        # Neue Termine per E-Mail melden
         send_email(
             new_appointments
         )
 
-        # Python-Laufzeit
-        python_runtime = (
-            time.perf_counter()
-            - python_start
-        )
-
-        telegram_message = (
-            "🚨 MiWuLa KiTa-Termine!\n\n"
-            "Neue Termine wurden gefunden:\n\n"
-        )
-
-        for appointment in new_appointments:
-            telegram_message += (
-                f"📅 {appointment['text']}\n"
-                f"🔗 {appointment['url']}\n\n"
-            )
-
-        telegram_message += (
-            f"⏱️ Python: "
-            f"{format_runtime(python_runtime)}"
-        )
-
-        send_telegram(
-            telegram_message
-        )
-
     else:
-
         print(
             "Keine neuen Termine."
         )
 
-        # Python-Laufzeit
-        python_runtime = (
-            time.perf_counter()
-            - python_start
-        )
-
-        send_telegram(
-            "🟢 MiWuLa KiTa Monitor\n\n"
-            "Die Prüfung wurde "
-            "erfolgreich durchgeführt.\n\n"
-            f"📅 Termine gefunden: "
-            f"{len(current_appointments)}\n"
-            f"⏱️ Python: "
-            f"{format_runtime(python_runtime)}\n"
-            "Keine neuen Termine."
-        )
+    # Python-Laufzeit messen
+    python_runtime = (
+        time.perf_counter()
+        - python_start
+    )
 
     # Zustand speichern
     save_state(
@@ -402,6 +346,43 @@ def main():
 
     print("=" * 50)
 
+    # Python-Laufzeit an GitHub Actions übergeben
+    github_output = os.environ.get(
+        "GITHUB_OUTPUT"
+    )
+
+    if github_output:
+
+        with open(
+            github_output,
+            "a",
+            encoding="utf-8"
+        ) as file:
+
+            file.write(
+                f"python_runtime={python_runtime:.2f}\n"
+            )
+
+            file.write(
+                f"appointment_count="
+                f"{len(current_appointments)}\n"
+            )
+
+            file.write(
+                f"new_appointment_count="
+                f"{len(new_appointments)}\n"
+            )
+
+    return {
+        "python_runtime": python_runtime,
+        "appointment_count": len(
+            current_appointments
+        ),
+        "new_appointment_count": len(
+            new_appointments
+        )
+    }
+
 
 if __name__ == "__main__":
 
@@ -410,23 +391,17 @@ if __name__ == "__main__":
 
     except Exception as error:
 
+        print()
         print(
             "🔴 FEHLER:"
         )
 
         print(
-            str(error)
+            f"{type(error).__name__}: "
+            f"{error}"
         )
 
-        try:
-
-            send_telegram(
-                "🔴 MiWuLa KiTa Monitor FEHLER\n\n"
-                f"{type(error).__name__}: "
-                f"{error}"
-            )
-
-        except Exception:
-            pass
-
+        # Fehler an GitHub Actions zurückgeben.
+        # Telegram wird vom Workflow verschickt,
+        # damit nur eine Nachricht entsteht.
         raise
