@@ -95,12 +95,6 @@ Dein MiWuLa KiTa Monitor
     print("E-Mail erfolgreich versendet.")
 
 def main():
-    print("Sende Test-E-Mail...")
-    send_email()
-    print("Test abgeschlossen.")
-
-    return
-
     current_status = check_kita_page()
 
     previous_state = load_previous_state()
