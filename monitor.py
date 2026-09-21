@@ -331,3 +331,35 @@ if __name__ == "__main__":
         print(str(error))
 
         raise
+
+import os
+import requests
+
+# 1. Variablen aus den GitHub Secrets laden
+telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+loop_token = os.environ.get("LOOP_TOKEN")
+
+# 2. Telegram Nachricht senden
+if telegram_token and chat_id:
+    msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
+    telegram_url = f"https://telegram.org{telegram_token}/sendMessage"
+    try:
+        requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
+        print("Telegram Nachricht erfolgreich gesendet.")
+    except Exception as e:
+        print(f"Fehler bei Telegram: {e}")
+
+# 3. Sofortiger, kostenloser Rerun über die GitHub-API
+if loop_token:
+    github_url = "https://github.com"
+    headers = {
+        "Authorization": f"token {loop_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    data = {"event_type": "loop-check"}
+    try:
+        res = requests.post(github_url, json=data, headers=headers)
+        print(f"GitHub Rerun signalisiert. Status: {res.status_code}")
+    except Exception as e:
+        print(f"Fehler beim GitHub Rerun: {e}")
