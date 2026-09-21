@@ -18,9 +18,9 @@ jobs:
         run: |
           echo "Sende Signal mit LOOP_TOKEN..."
           
-          # HIER DEINEN NAMEN UND REPO-NAMEN EINTRAGEN (z.B. snaldasc/miwula-kita-monitor)
+          # AUTOMATISCHE URL: ://github.com... wird von GitHub selbst ausgefüllt
           curl -f -v -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://github.com \
+            https://://github.com${{ github.repository }}/dispatches \
             -d '{"event_type": "test-loop-check"}'
