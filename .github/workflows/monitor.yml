@@ -1,13 +1,12 @@
 name: MiWuLa KiTa Monitor
 
 on:
-  # Manueller Start über GitHub Actions
-  workflow_dispatch:
-
   # Automatische Prüfung alle 15 Minuten
   schedule:
-    - cron: "3,18,24,33,48 * * * *"
+    - cron: "7/5 * * * *"
       timezone: "Europe/Berlin"
+  workflow_dispatch:
+
 
 jobs:
   check-kita:
