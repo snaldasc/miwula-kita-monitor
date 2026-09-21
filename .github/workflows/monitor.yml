@@ -69,7 +69,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Keine Änderung am Zustand."
           else
-            git commit -m "Update MiWuLa KiTa status [skip ci]" # [skip ci] verhindert, dass dieser Push einen neuen Run auslöst
+            git commit -m "Update MiWuLa KiTa status [skip ci]"
             git push
           fi
 
@@ -90,7 +90,7 @@ jobs:
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
 
       # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht
+      # Eine einzige Telegram-Nachricht (KOMPLETT KLAMMERFREI)
       # ---------------------------------------------
       - name: Telegram Status senden
         if: always()
@@ -106,17 +106,13 @@ jobs:
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # KOSTENSPAREND: Rerun nach einer kontrollierten Pause
+      # KOSTENSPAREND & BLITZSCHNELL: Sofortiger Rerun
       # ---------------------------------------------
-      - name: Pause einlegen und retrigger
+      - name: Sofortiger Rerun-Befehl an die API
         if: always()
         run: |
-          # Um Minuten zu sparen, legen wir hier eine kurze Pause von 60 Sekunden ein, 
-          # bevor der nächste Job in die Warteschlange eingereiht wird.
-          echo "Warte 60 Sekunden vor dem nächsten API-Signal..."
-          sleep 60
+          echo "Sende Rerun-Signal an GitHub API..."
           
-          echo "Sende kontrolliertes Rerun-Signal an GitHub API..."
           curl -f -X POST \
             -H "Authorization: token ${LOOP_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
