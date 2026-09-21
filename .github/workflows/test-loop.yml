@@ -15,14 +15,12 @@ jobs:
           sleep 5
 
       - name: Sende Rerun an GitHub API
-        env:
-          # DEINE FESTE URL OHNE VARIABLEN-SCHLEIFEN
-          API_URL: "https://github.com"
         run: |
-          echo "Sende Signal mit LOOP_TOKEN an $API_URL..."
+          echo "Sende Signal mit LOOP_TOKEN..."
           
+          # HIER IST DIE ECHTE API-URL DIREKT ALS REINER TEXT
           curl -f -v -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d '{"event_type": "test-loop-check"}' \
-            "$API_URL"
+            https://github.com \
+            -d '{"event_type": "test-loop-check"}'
