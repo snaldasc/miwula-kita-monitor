@@ -9,19 +9,18 @@ jobs:
   test-token:
     runs-on: ubuntu-latest
     steps:
-      - name: Warte 10 Sekunden
+      - name: Warte 5 Sekunden
         run: |
-          echo "Test startet... Warte kurz..."
-          sleep 10
+          echo "Test startet..."
+          sleep 5
 
       - name: Sende Rerun an GitHub API
         run: |
           echo "Sende Signal mit LOOP_TOKEN..."
           
-          # -f wirft einen harten Fehler im Log, falls das Token ungültig ist
-          # -v zeigt die exakte Antwort von GitHub im Log an
+          # HIER DEINEN NAMEN UND REPO-NAMEN EINTRAGEN (z.B. snaldasc/miwula-kita-monitor)
           curl -f -v -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://github.com{{ github.repository }}/dispatches \
+            https://github.com \
             -d '{"event_type": "test-loop-check"}'
