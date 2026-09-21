@@ -1,143 +1,333 @@
-name: MiWuLa KiTa Monitor
+import json
+import os
+import re
+import smtplib
+import time
+from email.message import EmailMessage
+from pathlib import Path
+from urllib.parse import urljoin
 
-on:
-  workflow_dispatch:
+import requests
+from bs4 import BeautifulSoup
 
-  schedule:
-    - cron: "*/10 * * * *"
 
-jobs:
-  check-kita:
-    runs-on: ubuntu-latest
+URL = "https://service.miniatur-wunderland.de/kita/"
+STATE_FILE = Path("state.json")
 
-    permissions:
-      contents: write
+HEADERS = {
+    "User-Agent": "MiWuLa-Kita-Monitor/1.0"
+}
 
-    env:
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
-    steps:
+def load_previous_state():
+    if not STATE_FILE.exists():
+        return None
 
-      # --------------------------------------------------
-      # Gesamten GitHub-Job starten
-      # --------------------------------------------------
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError):
+        return None
 
-      - name: Gesamtstartzeit erfassen
-        run: |
-          echo "START_TIME=$(date +%s.%N)" >> "$GITHUB_ENV"
 
-      # --------------------------------------------------
-      # Repository
-      # --------------------------------------------------
+def save_state(appointments):
+    data = {
+        "appointments": appointments
+    }
 
-      - name: Repository auschecken
-        uses: actions/checkout@v4
+    with open(STATE_FILE, "w", encoding="utf-8") as file:
+        json.dump(
+            data,
+            file,
+            indent=2,
+            ensure_ascii=False
+        )
 
-      # --------------------------------------------------
-      # Python
-      # --------------------------------------------------
 
-      - name: Python einrichten
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+def check_kita_page():
+    response = requests.get(
+        URL,
+        headers=HEADERS,
+        timeout=30
+    )
 
-      # --------------------------------------------------
-      # Abhängigkeiten
-      # --------------------------------------------------
+    response.raise_for_status()
 
-      - name: Abhängigkeiten installieren
-        run: |
-          pip install -r requirements.txt
+    soup = BeautifulSoup(
+        response.text,
+        "html.parser"
+    )
 
-      # --------------------------------------------------
-      # Monitor
-      # --------------------------------------------------
+    appointments = []
 
-      - name: MiWuLa Seite prüfen
-        id: monitor
-        run: |
-          python monitor.py
+    # Links auf der Kita-Seite durchsuchen
+    for link in soup.find_all("a", href=True):
+        text = link.get_text(" ", strip=True)
+        href = urljoin(URL, link["href"])
 
-      # --------------------------------------------------
-      # Zustand speichern
-      # --------------------------------------------------
+        if not text:
+            continue
 
-      - name: Zustand speichern
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        # Datumsangaben erkennen
+        date_matches = re.findall(
+            r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b",
+            text
+        )
 
-          git add state.json
+        if date_matches:
+            appointments.append({
+                "text": text,
+                "url": href
+            })
 
-          if git diff --cached --quiet; then
-            echo "Keine Änderung am Zustand."
-          else
-            git commit -m "Update MiWuLa KiTa status"
-            git push
-          fi
+    # Falls keine Datumslinks gefunden wurden,
+    # gesamten Seitentext durchsuchen
+    if not appointments:
+        text = soup.get_text(
+            " ",
+            strip=True
+        )
 
-      # --------------------------------------------------
-      # Gesamtlaufzeit berechnen
-      # --------------------------------------------------
+        date_matches = re.findall(
+            r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b",
+            text
+        )
 
-      - name: Gesamtlaufzeit berechnen
-        if: always()
-        run: |
+        for date in date_matches:
+            appointments.append({
+                "text": date,
+                "url": URL
+            })
 
-          END_TIME=$(date +%s.%N)
+    # Duplikate entfernen
+    unique_appointments = []
+    seen = set()
 
-          TOTAL_RUNTIME=$(python -c "
-          start = float('$START_TIME')
-          end = float('$END_TIME')
-          print(f'{end - start:.2f}')
-          ")
+    for appointment in appointments:
+        key = (
+            appointment["text"],
+            appointment["url"]
+        )
 
-          echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
+        if key not in seen:
+            seen.add(key)
+            unique_appointments.append(
+                appointment
+            )
 
-          echo "======================================"
-          echo "Gesamtlaufzeit: $TOTAL_RUNTIME Sekunden"
-          echo "======================================"
+    return unique_appointments
 
-      # --------------------------------------------------
-      # Telegram Status
-      # --------------------------------------------------
 
-      - name: Telegram Status senden
-        if: always()
-        run: |
+def send_email(new_appointments):
+    smtp_host = "smtp.gmail.com"
+    smtp_port = 587
 
-          if [ "${{ job.status }}" = "success" ]; then
-            STATUS="🟢 Erfolgreich"
-            TERMINES="Termine: ${{ steps.monitor.outputs.appointment_count }}"
-            NEUE_TERMINE="Neue Termine: ${{ steps.monitor.outputs.new_appointment_count }}"
-            PYTHON_TIME="${{ steps.monitor.outputs.python_runtime }} Sekunden"
-          else
-            STATUS="🔴 FEHLER"
-            TERMINES="Termine: nicht verfügbar"
-            NEUE_TERMINE="Neue Termine: nicht verfügbar"
-            PYTHON_TIME="nicht verfügbar"
-          fi
+    smtp_user = os.environ["SMTP_USER"]
+    smtp_password = os.environ["SMTP_PASSWORD"]
+    mail_to = os.environ["MAIL_TO"]
 
-          MESSAGE="MiWuLa KiTa Monitor
+    message = EmailMessage()
 
-          ${STATUS}
+    message["Subject"] = (
+        "🚨 MiWuLa KiTa-Termine veröffentlicht!"
+    )
 
-          📅 ${TERMINES}
-          🚨 ${NEUE_TERMINE}
+    message["From"] = smtp_user
+    message["To"] = mail_to
 
-          ⏱️ Python: ${PYTHON_TIME}
-          ⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
+    appointment_lines = []
 
-          🔢 Run: ${{ github.run_number }}"
+    for appointment in new_appointments:
+        appointment_lines.append(
+            f"- {appointment['text']}\n"
+            f"  {appointment['url']}"
+        )
 
-          curl -sS \
-            -X POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}"
+    appointments_text = "\n\n".join(
+        appointment_lines
+    )
+
+    message.set_content(
+        f"""Hallo,
+
+auf der MiWuLa-KiTa-Seite wurden neue Termine gefunden.
+
+Gefundene Termine:
+
+{appointments_text}
+
+Zur KiTa-Seite:
+{URL}
+
+Viele Grüße
+Dein MiWuLa KiTa Monitor
+"""
+    )
+
+    with smtplib.SMTP(
+        smtp_host,
+        smtp_port
+    ) as server:
+
+        server.starttls()
+
+        server.login(
+            smtp_user,
+            smtp_password
+        )
+
+        server.send_message(message)
+
+    print("📧 E-Mail erfolgreich versendet.")
+
+
+def main():
+    start_time = time.perf_counter()
+
+    current_appointments = check_kita_page()
+
+    previous_state = load_previous_state()
+
+    previous_appointments = []
+
+    if previous_state:
+        previous_appointments = previous_state.get(
+            "appointments",
+            []
+        )
+
+    print("MiWuLa KiTa Monitor")
+    print("=" * 50)
+
+    print(
+        f"Aktuelle Termine: "
+        f"{len(current_appointments)}"
+    )
+
+    print(
+        f"Vorherige Termine: "
+        f"{len(previous_appointments)}"
+    )
+
+    print()
+
+    # Gefundene Termine ausgeben
+    for appointment in current_appointments:
+        print(
+            f"TERMIN: {appointment['text']}"
+        )
+
+        print(
+            f"LINK:  {appointment['url']}"
+        )
+
+        print("-" * 50)
+
+    # Vorherige Termine als Schlüssel
+    previous_keys = {
+        (
+            appointment["text"],
+            appointment["url"]
+        )
+        for appointment in previous_appointments
+    }
+
+    # Nur neue Termine herausfiltern
+    new_appointments = [
+        appointment
+        for appointment in current_appointments
+        if (
+            appointment["text"],
+            appointment["url"]
+        ) not in previous_keys
+    ]
+
+    if new_appointments:
+        print()
+        print("🚨 NEUE TERMINE ERKANNT!")
+        print()
+
+        for appointment in new_appointments:
+            print(
+                f"- {appointment['text']}"
+            )
+
+            print(
+                f"  {appointment['url']}"
+            )
+
+        # E-Mail nur bei neuen Terminen
+        send_email(new_appointments)
+
+    else:
+        print("Keine neuen Termine.")
+
+    # Zustand speichern
+    save_state(current_appointments)
+
+    # Python-Laufzeit
+    python_runtime = (
+        time.perf_counter() - start_time
+    )
+
+    print()
+    print(
+        f"Python-Laufzeit: "
+        f"{python_runtime:.2f} Sekunden"
+    )
+
+    print("Zustand gespeichert.")
+    print("=" * 50)
+
+    # GitHub Workflow kann diese Werte verwenden
+    print(
+        f"NEW_APPOINTMENTS={len(new_appointments)}"
+    )
+
+    print(
+        f"APPOINTMENTS={len(current_appointments)}"
+    )
+
+    print(
+        f"PYTHON_RUNTIME={python_runtime:.2f}"
+    )
+
+    # Daten für GitHub Actions bereitstellen
+    github_output = os.environ.get(
+        "GITHUB_OUTPUT"
+    )
+
+    if github_output:
+        with open(
+            github_output,
+            "a",
+            encoding="utf-8"
+        ) as file:
+
+            file.write(
+                f"new_appointments="
+                f"{len(new_appointments)}\n"
+            )
+
+            file.write(
+                f"appointments="
+                f"{len(current_appointments)}\n"
+            )
+
+            file.write(
+                f"python_runtime="
+                f"{python_runtime:.2f}\n"
+            )
+
+
+if __name__ == "__main__":
+
+    try:
+        main()
+
+    except Exception as error:
+
+        print("🔴 FEHLER:")
+        print(str(error))
+
+        raise
