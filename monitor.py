@@ -215,12 +215,49 @@ def send_telegram(new_appointments):
         print(
             f"📱 Fehler beim Telegram-Versand: {error}"
         )
+def send_telegram_heartbeat():
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+
+    if not chat_id or not bot_token:
+        print("📱 Telegram-Variablen fehlen. Überspringe Heartbeat.")
+        return
+
+    message = "💓 MiWuLa KiTa Monitor: Heartbeat – Prüfung erfolgreich durchgelaufen!"
+
+    telegram_url = (
+        f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    )
+
+    try:
+        response = requests.post(
+            telegram_url,
+            data={
+                "chat_id": chat_id,
+                "text": message
+            },
+            timeout=30
+        )
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        if not result.get("ok"):
+            print(f"📱 Telegram API Fehler: {result}")
+            return
+
+        print("💓 Telegram Heartbeat erfolgreich gesendet.")
+
+    except requests.RequestException as error:
+        print(f"📱 Fehler beim Telegram-Heartbeat: {error}")
 
 
 def main():
     start_time = time.perf_counter()
 
     current_appointments = check_kita_page()
+    send_telegram_heartbeat()
 
     previous_state = load_previous_state()
 
