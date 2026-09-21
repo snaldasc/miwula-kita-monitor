@@ -111,17 +111,17 @@ jobs:
       # ---------------------------------------------
       # OPTION A: 30 Sekunden warten und retrigger
       # ---------------------------------------------
-      - name: Warteschleife und Neustart
-        if: always()
-        run: |
-          echo "Warte 30 Sekunden..."
-          sleep 30
+      # - name: Warteschleife und Neustart
+      #   if: always()
+      #   run: |
+      #     echo "Warte 30 Sekunden..."
+      #     sleep 30
           
-          echo "Sende Rerun-Signal an GitHub API..."
-          # HIER WURDE DIE URL REPARIERT (://github.com...)
-          curl -f -X POST \
-            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://://github.comsnaldasc/miwula-kita-monitor/dispatches \
-            -d '{"event_type": "loop-check"}'
+      #     echo "Sende Rerun-Signal an GitHub API..."
+      #     # HIER WURDE DIE URL REPARIERT (://github.com...)
+      #     curl -f -X POST \
+      #       -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
+      #       -H "Accept: application/vnd.github.v3+json" \
+      #       https://://github.comsnaldasc/miwula-kita-monitor/dispatches \
+      #       -d '{"event_type": "loop-check"}'
 
