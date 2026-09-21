@@ -392,7 +392,7 @@ def main():
 
 
 if __name__ == "__main__":
-    sened_test_email()
+    send_test_email()
     # try:
     #     main()
 
