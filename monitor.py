@@ -49,17 +49,15 @@ def check_kita_page():
     text = soup.get_text(" ", strip=True)
 
     if "Ups, Ihr seid zu früh dran!" in text:
-        status = "NO_TERMINES"
-    else:
-        status = "TERMINES_AVAILABLE"
+        return "NO_TERMINES"
 
-    return status
+    return "TERMINES_AVAILABLE"
 
 
 def send_email():
     smtp_host = "smtp.gmail.com"
     smtp_port = 587
-    
+
     smtp_user = os.environ["SMTP_USER"]
     smtp_password = os.environ["SMTP_PASSWORD"]
     mail_to = os.environ["MAIL_TO"]
@@ -83,20 +81,17 @@ Viele Grüße
 Dein MiWuLa KiTa Monitor
 """
     )
-    
-    print(f"SMTP Host: {smtp_host!r}")
-    print(f"SMTP Port: {smtp_port!r}")
 
     with smtplib.SMTP(smtp_host, smtp_port) as server:
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(message)
 
-    print("E-Mail erfolgreich versendet.")
+    print("📧 E-Mail erfolgreich versendet.")
+
 
 def main():
     current_status = check_kita_page()
-
     previous_state = load_previous_state()
 
     previous_status = (
@@ -111,18 +106,18 @@ def main():
     print(f"Aktueller Status:  {current_status}")
     print()
 
-    status_changed = (
-        previous_status is not None
-        and previous_status != current_status
-    )
+    if previous_status == "NO_TERMINES" and current_status == "TERMINES_AVAILABLE":
+        print("🚨 NEUE KI­TA-TERMINE ERKANNT!")
+        send_email()
 
-    if status_changed:
-        print("⚠️ STATUSÄNDERUNG ERKANNT!")
+    elif previous_status == current_status:
+        print("Keine Änderung.")
 
-        if current_status == "TERMINES_AVAILABLE":
-            send_email()
+    elif previous_status is None:
+        print("Erster Lauf.")
+
     else:
-        print("Keine relevante Änderung.")
+        print("Statusänderung erkannt, aber keine neue Terminveröffentlichung.")
 
     save_state(current_status)
 
