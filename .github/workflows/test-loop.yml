@@ -16,8 +16,8 @@ jobs:
 
       - name: Sende Rerun an GitHub API
         env:
-          # Wir bauen die URL sicher als GitHub-Variable außerhalb der Bash zusammen
-          API_URL: "https://github.com{{ github.repository }}/dispatches"
+          # DEINE FESTE URL OHNE VARIABLEN-SCHLEIFEN
+          API_URL: "https://github.com"
         run: |
           echo "Sende Signal mit LOOP_TOKEN an $API_URL..."
           
