@@ -133,8 +133,8 @@ Bitte den GitHub Actions Run prüfen."
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
-          sleep 300
+          echo "Warte 600 Sekunden (1 Minuten) bis zum nächsten Check..."
+          sleep 60
           
           curl -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
