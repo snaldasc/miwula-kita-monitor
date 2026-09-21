@@ -59,11 +59,11 @@ jobs:
       # ---------------------------------------------
       # Zustand speichern
       # ---------------------------------------------
-      - name: Zustand speichern
+      - name: Zustand保存 (Zustand speichern)
         if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@://github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add state.json
 
@@ -75,17 +75,21 @@ jobs:
           fi
 
       # ---------------------------------------------
-      # Gesamtlaufzeit berechnen (KORRIGIERT für env-Zugriff)
+      # Gesamtlaufzeit berechnen (Sichere Bash-Variante)
       # ---------------------------------------------
       - name: Gesamtlaufzeit berechnen
         if: always()
         run: |
           END_TIME=$(date +%s.%N)
-          TOTAL_RUNTIME=$(python -c "
-          start = float('${{ env.START_TIME }}')
-          end = float('$END_TIME')
-          print(f'{end - start:.2f}')
-          ")
+          START_TIME="${{ env.START_TIME }}"
+          
+          if [ -n "$START_TIME" ]; then
+            TOTAL_RUNTIME=$(awk "BEGIN {print $END_TIME - $START_TIME}")
+            TOTAL_RUNTIME=$(printf "%.2f" $TOTAL_RUNTIME)
+          else
+            TOTAL_RUNTIME="0.00"
+          fi
+          
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
           echo "======================================"
           echo "Gesamtlaufzeit: ${TOTAL_RUNTIME} Sekunden"
@@ -123,7 +127,7 @@ Bitte den GitHub Actions Run prüfen."
 
           curl -sS \
             -X POST \
-            "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
+            "https://telegram.org{TELEGRAM_8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
@@ -133,11 +137,12 @@ Bitte den GitHub Actions Run prüfen."
       - name: Warteschleife und Neustart
         if: always()
         run: |
-          echo "Warte 600 Sekunden (1 Minuten) bis zum nächsten Check..."
-          sleep 60
+          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
+          sleep 300
           
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          echo "Sende Rerun-Signal an GitHub API..."
+          curl -f -X POST \
+            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://github.com{{ github.repository }}/dispatches \
             -d '{"event_type": "loop-check"}'
