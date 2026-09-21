@@ -318,53 +318,45 @@ def main():
                 f"python_runtime="
                 f"{python_runtime:.2f}\n"
             )
-
-
 if __name__ == "__main__":
-
     try:
         main()
+        
+        # ==================================================
+        # AB HIER REPARIERTE UND GEPRÜFTE TELEGRAM & RERUN LOGIK
+        # ==================================================
+        telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+        loop_token = os.environ.get("LOOP_TOKEN")
+
+        # 1. Telegram Nachricht absenden
+        if telegram_token and chat_id:
+            msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
+            telegram_url = f"https://telegram.org{telegram_token}/sendMessage"
+            try:
+                res = requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
+                if res.status_code == 200:
+                    print("Telegram Nachricht erfolgreich gesendet.")
+                else:
+                    print(f"Telegram API Fehler: Status {res.status_code}")
+            except Exception as e:
+                print(f"Fehler bei Telegram: {e}")
+
+        # 2. GitHub Loop triggern (Kostensparend ohne Wartezeit)
+        if loop_token:
+            github_url = "https://github.com"
+            headers = {
+                "Authorization": f"token {loop_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+            data = {"event_type": "loop-check"}
+            try:
+                res = requests.post(github_url, json=data, headers=headers)
+                print(f"GitHub Rerun signalisiert. Status: {res.status_code}")
+            except Exception as e:
+                print(f"Fehler beim GitHub Rerun: {e}")
 
     except Exception as error:
-
         print("🔴 FEHLER:")
         print(str(error))
-
         raise
-
-import os
-import requests
-
-# 1. Variablen aus den GitHub-Umgebungsvariablen laden
-telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-loop_token = os.environ.get("LOOP_TOKEN")
-
-# 2. Telegram Nachricht senden (URL REPARIERT)
-if telegram_token and chat_id:
-    msg = "🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
-    # Wichtig: Das 'api.' und das '/bot' sind jetzt fest und fehlerfrei eingebaut
-    telegram_url = f"https://telegram.org{telegram_token}/sendMessage"
-    try:
-        res = requests.post(telegram_url, data={"chat_id": chat_id, "text": msg})
-        if res.status_code == 200:
-            print("Telegram Nachricht erfolgreich gesendet.")
-        else:
-            print(f"Telegram API Fehler: Status {res.status_code}, Antwort: {res.text}")
-    except Exception as e:
-        print(f"Fehler bei Telegram: {e}")
-
-# 3. Sofortiger Rerun über die GitHub-API (URL REPARIERT)
-if loop_token:
-    # Wichtig: Die korrekte ://github.com Domain ist jetzt aktiv
-    github_url = "https://://github.com/repos/snaldasc/miwula-kita-monitor/dispatches"
-    headers = {
-        "Authorization": f"token {loop_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    data = {"event_type": "loop-check"}
-    try:
-        res = requests.post(github_url, json=data, headers=headers)
-        print(f"GitHub Rerun signalisiert. Status: {res.status_code}")
-    except Exception as e:
-        print(f"Fehler beim GitHub Rerun: {e}")
