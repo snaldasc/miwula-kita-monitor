@@ -83,6 +83,9 @@ Viele Grüße
 Dein MiWuLa KiTa Monitor
 """
     )
+    
+    print(f"SMTP Host: {smtp_host!r}")
+    print(f"SMTP Port: {smtp_port!r}")
 
     with smtplib.SMTP(smtp_host, smtp_port) as server:
         server.starttls()
