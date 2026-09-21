@@ -51,7 +51,6 @@ def check_kita_page():
 
     appointments = []
 
-    # Alle Links der Kita-Seite untersuchen
     for link in soup.find_all("a", href=True):
         text = link.get_text(" ", strip=True)
         href = urljoin(URL, link["href"])
@@ -59,11 +58,6 @@ def check_kita_page():
         if not text:
             continue
 
-        # Nach typischen Datumsangaben suchen.
-        # Unterstützt z.B.:
-        # 01.12.2026
-        # 1.12.2026
-        # 01.12.
         date_matches = re.findall(
             r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b",
             text
@@ -75,8 +69,6 @@ def check_kita_page():
                 "url": href
             })
 
-    # Falls die Seite keine einzelnen Datumslinks enthält,
-    # prüfen wir zusätzlich den Seitentext.
     if not appointments:
         text = soup.get_text(" ", strip=True)
 
@@ -91,7 +83,6 @@ def check_kita_page():
                 "url": URL
             })
 
-    # Duplikate entfernen
     unique_appointments = []
     seen = set()
 
@@ -106,6 +97,28 @@ def check_kita_page():
             unique_appointments.append(appointment)
 
     return unique_appointments
+
+
+def send_telegram(message):
+    bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
+    chat_id = os.environ["TELEGRAM_CHAT_ID"]
+
+    telegram_url = (
+        f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    )
+
+    response = requests.post(
+        telegram_url,
+        data={
+            "chat_id": chat_id,
+            "text": message
+        },
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    print("📱 Telegram-Nachricht erfolgreich gesendet.")
 
 
 def send_email(new_appointments):
@@ -176,12 +189,6 @@ def main():
     print(f"Vorherige Termine: {len(previous_appointments)}")
     print()
 
-    for appointment in current_appointments:
-        print(f"TERMIN: {appointment['text']}")
-        print(f"LINK:  {appointment['url']}")
-        print("-" * 50)
-
-    # Termine anhand von Text + URL vergleichen
     previous_keys = {
         (
             appointment["text"],
@@ -200,9 +207,7 @@ def main():
     ]
 
     if new_appointments:
-        print()
         print("🚨 NEUE TERMINE ERKANNT!")
-        print()
 
         for appointment in new_appointments:
             print(f"- {appointment['text']}")
@@ -210,11 +215,29 @@ def main():
 
         send_email(new_appointments)
 
-    elif current_appointments:
-        print("Keine neuen Termine.")
+        telegram_message = (
+            "🚨 MiWuLa KiTa-Termine!\n\n"
+            "Neue Termine wurden gefunden:\n\n"
+        )
+
+        for appointment in new_appointments:
+            telegram_message += (
+                f"📅 {appointment['text']}\n"
+                f"🔗 {appointment['url']}\n\n"
+            )
+
+        send_telegram(telegram_message)
 
     else:
-        print("Keine Termine gefunden.")
+        print("Keine neuen Termine.")
+
+        send_telegram(
+            "🟢 MiWuLa KiTa Monitor\n\n"
+            "Die stündliche Prüfung wurde erfolgreich "
+            "durchgeführt.\n\n"
+            f"Gefundene Termine: {len(current_appointments)}\n"
+            "Keine neuen Termine."
+        )
 
     save_state(current_appointments)
 
@@ -224,4 +247,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+
+    except Exception as error:
+        print("🔴 FEHLER:")
+        print(str(error))
+
+        try:
+            send_telegram(
+                "🔴 MiWuLa KiTa Monitor FEHLER\n\n"
+                f"{type(error).__name__}: {error}"
+            )
+        except Exception:
+            pass
+
+        raise
