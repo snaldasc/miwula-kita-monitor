@@ -2,9 +2,8 @@ name: MiWuLa KiTa Monitor
 
 on:
   workflow_dispatch:
-
-  schedule:
-    - cron: "*/10 * * * *"
+  repository_dispatch:
+    types: [loop-check]
 
 jobs:
   check-kita:
@@ -21,11 +20,9 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
-
       # ---------------------------------------------
       # Startzeit des gesamten Jobs
       # ---------------------------------------------
-
       - name: Gesamtstartzeit erfassen
         run: |
           echo "START_TIME=$(date +%s.%N)" >> "$GITHUB_ENV"
@@ -33,14 +30,12 @@ jobs:
       # ---------------------------------------------
       # Repository
       # ---------------------------------------------
-
       - name: Repository auschecken
         uses: actions/checkout@v4
 
       # ---------------------------------------------
       # Python
       # ---------------------------------------------
-
       - name: Python einrichten
         uses: actions/setup-python@v5
         with:
@@ -49,7 +44,6 @@ jobs:
       # ---------------------------------------------
       # Abhängigkeiten
       # ---------------------------------------------
-
       - name: Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
@@ -57,7 +51,6 @@ jobs:
       # ---------------------------------------------
       # MiWuLa Monitor
       # ---------------------------------------------
-
       - name: MiWuLa Seite prüfen
         id: monitor
         run: |
@@ -66,12 +59,11 @@ jobs:
       # ---------------------------------------------
       # Zustand speichern
       # ---------------------------------------------
-
       - name: Zustand speichern
         if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@://github.com"
 
           git add state.json
 
@@ -83,23 +75,18 @@ jobs:
           fi
 
       # ---------------------------------------------
-      # Gesamtlaufzeit berechnen
+      # Gesamtlaufzeit berechnen (KORRIGIERT für env-Zugriff)
       # ---------------------------------------------
-
       - name: Gesamtlaufzeit berechnen
         if: always()
         run: |
-
           END_TIME=$(date +%s.%N)
-
           TOTAL_RUNTIME=$(python -c "
-          start = float('$START_TIME')
+          start = float('${{ env.START_TIME }}')
           end = float('$END_TIME')
           print(f'{end - start:.2f}')
           ")
-
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
-
           echo "======================================"
           echo "Gesamtlaufzeit: ${TOTAL_RUNTIME} Sekunden"
           echo "======================================"
@@ -107,13 +94,10 @@ jobs:
       # ---------------------------------------------
       # Eine einzige Telegram-Nachricht
       # ---------------------------------------------
-
       - name: Telegram Status senden
         if: always()
         run: |
-
           if [ "${{ job.status }}" = "success" ]; then
-
             MESSAGE="🟢 MiWuLa KiTa Monitor
 
 Prüfung erfolgreich.
@@ -122,26 +106,38 @@ Prüfung erfolgreich.
 🆕 Neue Termine: ${{ steps.monitor.outputs.new_appointments }}
 
 ⏱️ Python: ${{ steps.monitor.outputs.python_runtime }} Sekunden
-⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
+⏱️ Gesamt: ${{ env.TOTAL_RUNTIME }} Sekunden
 
 🔢 GitHub Run: ${{ github.run_number }}"
-
           else
-
             MESSAGE="🔴 MiWuLa KiTa Monitor
 
 FEHLER beim Ausführen.
 
-⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
+⏱️ Gesamt: ${{ env.TOTAL_RUNTIME }} Sekunden
 
 🔢 GitHub Run: ${{ github.run_number }}
 
 Bitte den GitHub Actions Run prüfen."
-
           fi
 
           curl -sS \
             -X POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
+
+      # ---------------------------------------------
+      # OPTION A: 5 Minuten warten und den nächsten Run triggern
+      # ---------------------------------------------
+      - name: Warteschleife und Neustart
+        if: always()
+        run: |
+          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
+          sleep 300
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://github.com{{ github.repository }}/dispatches \
+            -d '{"event_type": "loop-check"}'
