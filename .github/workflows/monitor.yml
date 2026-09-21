@@ -1,7 +1,9 @@
 name: MiWuLa KiTa Monitor
 
 on:
-
+  push:
+    branches:
+      - main
   workflow_dispatch:
   repository_dispatch:
     types: [loop-check]
@@ -19,6 +21,7 @@ jobs:
       MAIL_TO: ${{ secrets.MAIL_TO }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      LOOP_TOKEN: ${{ secrets.LOOP_TOKEN }}
 
     steps:
       # ---------------------------------------------
@@ -89,9 +92,8 @@ jobs:
           fi
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
 
-
       # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht
+      # Eine einzige Telegram-Nachricht (KOMPLETT OHNE KLAMMERN)
       # ---------------------------------------------
       - name: Telegram Status senden
         if: always()
@@ -102,12 +104,12 @@ jobs:
             MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
           fi
           
-          curl -sS -X POST "https://telegram.org{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          curl -sS -X POST "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # KOSTENSPAREND: Rerun-Signal an die API
+      # KOSTENSPAREND: Rerun-Signal an die API (KOMPLETT OHNE KLAMMERN)
       # ---------------------------------------------
       - name: Sofortiger Rerun-Befehl an die API
         if: always()
@@ -115,7 +117,7 @@ jobs:
           echo "Sende Rerun-Signal an GitHub API..."
           
           curl -f -X POST \
-            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
+            -H "Authorization: token ${LOOP_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
             -d '{"event_type": "loop-check"}' \
             "https://github.com"
