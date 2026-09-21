@@ -40,7 +40,7 @@ jobs:
           BOT_TOKEN="8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI"
           MESSAGE="🟢 MiWuLa KiTa Monitor: Prüfung erfolgreich durchgelaufen!"
           
-          curl -sS -X POST "https://api.telegram.org/8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI/sendMessage" \
+          curl -sS -X POST "https://api.telegram.org/bot8849293486:AAF34D4gOgXT4_7s-KnTt4PJBaEvoO3hVQI/sendMessage" \
             -d "chat_id=${CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
