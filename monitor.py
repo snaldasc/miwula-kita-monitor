@@ -341,6 +341,8 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+        send_email(new_appointments)
+        send_telegram(new_appointments)
 
     except Exception as error:
         print("🔴 FEHLER:")
