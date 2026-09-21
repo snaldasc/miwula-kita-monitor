@@ -1,15 +1,28 @@
-      # ---------------------------------------------
-      # OPTION A: 5 Minuten warten und den nächsten Run triggern
-      # ---------------------------------------------
-      - name: Warteschleife und Neustart
-        if: always()
+name: API-Token Test-Schleife
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [test-loop-check]
+
+jobs:
+  test-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warte 5 Sekunden
         run: |
-          echo "Warte 300 Sekunden (5 Minuten) bis zum nächsten Check..."
-          sleep 300
+          echo "Test startet..."
+          sleep 5
+
+      - name: Sende Rerun an GitHub API
+        run: |
+          echo "Sende Signal mit LOOP_TOKEN..."
           
-          echo "Sende Rerun-Signal an GitHub API..."
-          curl -f -X POST \
+          # HIER IST DIE ECHTE API-URL DIREKT ALS REINER TEXT
+          curl -f -v -X POST \
             -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://github.com \
-            -d '{"event_type": "loop-check"}'
+            -d '{"event_type": "test-loop-check"}'
+
+            
