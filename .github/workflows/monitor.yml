@@ -8,113 +8,30 @@ on:
 jobs:
   check-kita:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
 
-    env:
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      LOOP_TOKEN: ${{ secrets.LOOP_TOKEN }}
-
     steps:
-      # ---------------------------------------------
-      # Startzeit des gesamten Jobs
-      # ---------------------------------------------
-      - name: Gesamtstartzeit erfassen
-        run: |
-          echo "START_TIME=$(date +%s.%N)" >> "$GITHUB_ENV"
-
-      # ---------------------------------------------
-      # Repository
-      # ---------------------------------------------
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      # ---------------------------------------------
-      # Python
-      # ---------------------------------------------
       - name: Python einrichten
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ---------------------------------------------
-      # Abhängigkeiten
-      # ---------------------------------------------
       - name: Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
+          pip install requests
 
-      # ---------------------------------------------
-      # MiWuLa Monitor
-      # ---------------------------------------------
-      - name: MiWuLa Seite prüfen
-        id: monitor
+      - name: MiWuLa Monitor ausführen
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOOP_TOKEN: ${{ secrets.LOOP_TOKEN }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
         run: |
           python monitor.py
-
-      # ---------------------------------------------
-      # Zustand speichern
-      # ---------------------------------------------
-      - name: Zustand speichern
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@://github.com"
-          git add state.json
-          if git diff --cached --quiet; then
-            echo "Keine Änderung am Zustand."
-          else
-            git commit -m "Update MiWuLa KiTa status [skip ci]"
-            git push
-          fi
-
-      # ---------------------------------------------
-      # Gesamtlaufzeit berechnen
-      # ---------------------------------------------
-      - name: Gesamtlaufzeit berechnen
-        if: always()
-        run: |
-          END_TIME=$(date +%s.%N)
-          START_TIME="${{ env.START_TIME }}"
-          if [ -n "$START_TIME" ]; then
-            TOTAL_RUNTIME=$(awk "BEGIN {print $END_TIME - $START_TIME}")
-            TOTAL_RUNTIME=$(printf "%.2f" $TOTAL_RUNTIME)
-          else
-            TOTAL_RUNTIME="0.00"
-          fi
-          echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
-
-      # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht (KOMPLETT KLAMMERFREI)
-      # ---------------------------------------------
-      - name: Telegram Status senden
-        if: always()
-        run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            MESSAGE="🟢 MiWuLa KiTa Monitor Run ${{ github.run_number }} erfolgreich!"
-          else
-            MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
-          fi
-          
-          curl -sS -X POST "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}"
-
-      # ---------------------------------------------
-      # KOSTENSPAREND & BLITZSCHNELL: Sofortiger Rerun
-      # ---------------------------------------------
-      - name: Sofortiger Rerun-Befehl an die API
-        if: always()
-        run: |
-          echo "Sende Rerun-Signal an GitHub API..."
-          
-          curl -f -X POST \
-            -H "Authorization: token ${LOOP_TOKEN}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d '{"event_type": "loop-check"}' \
-            "https://github.com"
