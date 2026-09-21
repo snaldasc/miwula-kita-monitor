@@ -1,9 +1,7 @@
 name: MiWuLa KiTa Monitor
 
 on:
-  push:
-    branches:
-      - main
+
   workflow_dispatch:
   repository_dispatch:
     types: [loop-check]
@@ -66,7 +64,7 @@ jobs:
         if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@://github.com"
           git add state.json
           if git diff --cached --quiet; then
             echo "Keine Änderung am Zustand."
@@ -90,9 +88,9 @@ jobs:
             TOTAL_RUNTIME="0.00"
           fi
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
-          
+
       # ---------------------------------------------
-      # Eine einzige Telegram-Nachricht
+      # Eine einzige Telegram-Nachricht (Klammerfrei)
       # ---------------------------------------------
       - name: Telegram Status senden
         if: always()
@@ -103,25 +101,21 @@ jobs:
             MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
           fi
           
-          # HIER WURDE DIE URL REPARIERT (api.telegram.org/bot...)
-          curl -sS -X POST "https://telegram.org{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          curl -sS -X POST "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MESSAGE}"
 
       # ---------------------------------------------
-      # OPTION A: 30 Sekunden warten und retrigger
+      # KOSTENSPAREND: Rerun-Signal OHNE aktives Warten absetzen
       # ---------------------------------------------
-      # - name: Warteschleife und Neustart
-      #   if: always()
-      #   run: |
-      #     echo "Warte 30 Sekunden..."
-      #     sleep 30
+      - name: Sofortiger Rerun-Befehl an die API
+        if: always()
+        run: |
+          echo "Sende Rerun-Signal an GitHub API..."
           
-      #     echo "Sende Rerun-Signal an GitHub API..."
-      #     # HIER WURDE DIE URL REPARIERT (://github.com...)
-      #     curl -f -X POST \
-      #       -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
-      #       -H "Accept: application/vnd.github.v3+json" \
-      #       https://://github.comsnaldasc/miwula-kita-monitor/dispatches \
-      #       -d '{"event_type": "loop-check"}'
-
+          # Wir triggern den nächsten Lauf, GitHub plant ihn wartungsarm ein
+          curl -f -X POST \
+            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://github.com \
+            -d '{"event_type": "loop-check"}'
