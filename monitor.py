@@ -396,8 +396,8 @@ if __name__ == "__main__":
     # try:
     #     main()
 
-    except Exception as error:
-        print("🔴 FEHLER:")
-        print(str(error))
-        raise
+    # except Exception as error:
+    #     print("🔴 FEHLER:")
+    #     print(str(error))
+    #     raise
     
