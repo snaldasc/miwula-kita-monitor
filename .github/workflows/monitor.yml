@@ -70,13 +70,20 @@ jobs:
           fi
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
 
-      - name: Telegram Status senden
+        name: Telegram Status senden
         if: always()
         run: |
-          MESSAGE="MiWuLa KiTa Monitor Run ${{ github.run_number }} - Status: ${{ job.status }}"
-          curl -sS -X POST "https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+          if [ "${{ job.status }}" = "success" ]; then
+            MESSAGE="🟢 MiWuLa KiTa Monitor Run ${{ github.run_number }} erfolgreich!"
+          else
+            MESSAGE="🔴 MiWuLa KiTa Monitor Run ${{ github.run_number }} fehlgeschlagen!"
+          fi
+          
+          curl -sS -X POST "https://telegram.org{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
             --data-urlencode "text=${MESSAGE}"
+
+
 
       - name: Warteschleife und Neustart
         if: always()
