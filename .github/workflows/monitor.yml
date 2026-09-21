@@ -6,8 +6,8 @@ on:
 
   # Automatische Prüfung alle 15 Minuten
   schedule:
-    - cron: "*/15 * * * *"
-
+    - cron: "3,18,24,33,48 * * * *"
+      timezone: "Europe/Berlin"
 
 jobs:
   check-kita:
