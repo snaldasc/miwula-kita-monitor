@@ -10,13 +10,6 @@ jobs:
     permissions:
       contents: write
 
-    env:
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
-
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
@@ -29,13 +22,6 @@ jobs:
       - name: Abhängigkeiten installieren
         run: pip install -r requirements.txt
 
-      - name: Secrets prüfen
-        run: |
-          if [ -n "$SMTP_HOST" ]; then echo "SMTP_HOST: vorhanden"; else echo "SMTP_HOST: FEHLT"; fi
-          if [ -n "$SMTP_PORT" ]; then echo "SMTP_PORT: vorhanden"; else echo "SMTP_PORT: FEHLT"; fi
-          if [ -n "$SMTP_USER" ]; then echo "SMTP_USER: vorhanden"; else echo "SMTP_USER: FEHLT"; fi
-          if [ -n "$SMTP_PASSWORD" ]; then echo "SMTP_PASSWORD: vorhanden"; else echo "SMTP_PASSWORD: FEHLT"; fi
-          if [ -n "$MAIL_TO" ]; then echo "MAIL_TO: vorhanden"; else echo "MAIL_TO: FEHLT"; fi
       - name: Secrets prüfen
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -58,8 +44,6 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
         run: python monitor.py
-
-
 
       - name: Zustand speichern
         run: |
