@@ -19,25 +19,29 @@ def check_kita_page():
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    print("Seite erfolgreich abgerufen.")
-    print("=" * 60)
+    text = soup.get_text(" ", strip=True)
 
-    # Alle Links der Seite anzeigen
-    links = soup.find_all("a")
+    if "Ups, Ihr seid zu früh dran!" in text:
+        status = "NO_TERMINES"
+    else:
+        status = "TERMINES_AVAILABLE"
 
-    print(f"Gefundene Links: {len(links)}")
-    print()
+    print("MiWuLa KiTa Monitor")
+    print("=" * 50)
+    print(f"Status: {status}")
+    print(f"URL: {URL}")
 
-    for link in links:
-        text = link.get_text(" ", strip=True)
-        href = link.get("href")
+    if status == "NO_TERMINES":
+        print("Noch keine KiTa-Termine veröffentlicht.")
+    else:
+        print("⚠️ KiTa-Termine könnten veröffentlicht worden sein!")
+        print()
+        print("Relevanter Seiteninhalt:")
+        print(text)
 
-        if text or href:
-            print(f"TEXT: {text}")
-            print(f"HREF: {href}")
-            print("-" * 40)
+    print("=" * 50)
 
-    print("=" * 60)
+    return status
 
 
 if __name__ == "__main__":
