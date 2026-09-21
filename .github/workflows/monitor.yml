@@ -22,50 +22,26 @@ jobs:
 
     steps:
 
-      # --------------------------------------------------
-      # Gesamten GitHub-Job starten
-      # --------------------------------------------------
-
-      - name: Gesamtstartzeit erfassen
+      - name: Startzeit erfassen
         run: |
           echo "START_TIME=$(date +%s.%N)" >> "$GITHUB_ENV"
 
-      # --------------------------------------------------
-      # Repository
-      # --------------------------------------------------
-
       - name: Repository auschecken
         uses: actions/checkout@v4
-
-      # --------------------------------------------------
-      # Python
-      # --------------------------------------------------
 
       - name: Python einrichten
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # --------------------------------------------------
-      # Abhängigkeiten
-      # --------------------------------------------------
-
       - name: Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
-
-      # --------------------------------------------------
-      # Monitor
-      # --------------------------------------------------
 
       - name: MiWuLa Seite prüfen
         id: monitor
         run: |
           python monitor.py
-
-      # --------------------------------------------------
-      # Zustand speichern
-      # --------------------------------------------------
 
       - name: Zustand speichern
         if: success()
@@ -82,14 +58,9 @@ jobs:
             git push
           fi
 
-      # --------------------------------------------------
-      # Gesamtlaufzeit berechnen
-      # --------------------------------------------------
-
       - name: Gesamtlaufzeit berechnen
         if: always()
         run: |
-
           END_TIME=$(date +%s.%N)
 
           TOTAL_RUNTIME=$(python -c "
@@ -100,41 +71,40 @@ jobs:
 
           echo "TOTAL_RUNTIME=$TOTAL_RUNTIME" >> "$GITHUB_ENV"
 
-          echo "======================================"
-          echo "Gesamtlaufzeit: $TOTAL_RUNTIME Sekunden"
-          echo "======================================"
-
-      # --------------------------------------------------
-      # Telegram Status
-      # --------------------------------------------------
+          echo "Gesamtlaufzeit: ${TOTAL_RUNTIME} Sekunden"
 
       - name: Telegram Status senden
         if: always()
         run: |
-
           if [ "${{ job.status }}" = "success" ]; then
             STATUS="🟢 Erfolgreich"
-            TERMINES="Termine: ${{ steps.monitor.outputs.appointment_count }}"
-            NEUE_TERMINE="Neue Termine: ${{ steps.monitor.outputs.new_appointment_count }}"
-            PYTHON_TIME="${{ steps.monitor.outputs.python_runtime }} Sekunden"
           else
-            STATUS="🔴 FEHLER"
-            TERMINES="Termine: nicht verfügbar"
-            NEUE_TERMINE="Neue Termine: nicht verfügbar"
-            PYTHON_TIME="nicht verfügbar"
+            STATUS="🔴 Fehler"
           fi
 
-          MESSAGE="MiWuLa KiTa Monitor
+          if [ "${{ job.status }}" = "success" ]; then
+            MESSAGE="🟢 MiWuLa KiTa Monitor
 
-          ${STATUS}
+Prüfung erfolgreich.
 
-          📅 ${TERMINES}
-          🚨 ${NEUE_TERMINE}
+📅 Termine gefunden: ${{ steps.monitor.outputs.appointments }}
+🆕 Neue Termine: ${{ steps.monitor.outputs.new_appointments }}
 
-          ⏱️ Python: ${PYTHON_TIME}
-          ⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
+⏱️ Python: ${{ steps.monitor.outputs.python_runtime }} Sekunden
+⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
 
-          🔢 Run: ${{ github.run_number }}"
+🔢 GitHub Run: ${{ github.run_number }}"
+          else
+            MESSAGE="🔴 MiWuLa KiTa Monitor
+
+Fehler beim Ausführen des Monitors.
+
+⏱️ Gesamt: ${TOTAL_RUNTIME} Sekunden
+
+🔢 GitHub Run: ${{ github.run_number }}
+
+Bitte GitHub Actions prüfen."
+          fi
 
           curl -sS \
             -X POST \
