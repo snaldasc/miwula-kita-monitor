@@ -1,0 +1,27 @@
+name: API-Token Test-Schleife
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [test-loop-check]
+
+jobs:
+  test-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warte 10 Sekunden
+        run: |
+          echo "Test startet... Warte kurz..."
+          sleep 10
+
+      - name: Sende Rerun an GitHub API
+        run: |
+          echo "Sende Signal mit LOOP_TOKEN..."
+          
+          # -f wirft einen harten Fehler im Log, falls das Token ungültig ist
+          # -v zeigt die exakte Antwort von GitHub im Log an
+          curl -f -v -X POST \
+            -H "Authorization: token ${{ secrets.LOOP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://github.com{{ github.repository }}/dispatches \
+            -d '{"event_type": "test-loop-check"}'
