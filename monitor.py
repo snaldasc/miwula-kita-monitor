@@ -2,6 +2,7 @@ import json
 import os
 import re
 import smtplib
+import time
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import urljoin
@@ -51,6 +52,7 @@ def check_kita_page():
 
     appointments = []
 
+    # Alle Links der Kita-Seite untersuchen
     for link in soup.find_all("a", href=True):
         text = link.get_text(" ", strip=True)
         href = urljoin(URL, link["href"])
@@ -58,6 +60,10 @@ def check_kita_page():
         if not text:
             continue
 
+        # Datumsangaben erkennen:
+        # 01.12.2026
+        # 1.12.2026
+        # 01.12.
         date_matches = re.findall(
             r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b",
             text
@@ -69,6 +75,8 @@ def check_kita_page():
                 "url": href
             })
 
+    # Falls keine Datumslinks gefunden wurden,
+    # den gesamten Seitentext durchsuchen.
     if not appointments:
         text = soup.get_text(" ", strip=True)
 
@@ -83,6 +91,7 @@ def check_kita_page():
                 "url": URL
             })
 
+    # Duplikate entfernen
     unique_appointments = []
     seen = set()
 
@@ -171,6 +180,8 @@ Dein MiWuLa KiTa Monitor
 
 
 def main():
+    start_time = time.perf_counter()
+
     current_appointments = check_kita_page()
     previous_state = load_previous_state()
 
@@ -189,6 +200,12 @@ def main():
     print(f"Vorherige Termine: {len(previous_appointments)}")
     print()
 
+    for appointment in current_appointments:
+        print(f"TERMIN: {appointment['text']}")
+        print(f"LINK:  {appointment['url']}")
+        print("-" * 50)
+
+    # Vorherige Termine für Vergleich vorbereiten
     previous_keys = {
         (
             appointment["text"],
@@ -197,6 +214,7 @@ def main():
         for appointment in previous_appointments
     }
 
+    # Nur wirklich neue Termine herausfiltern
     new_appointments = [
         appointment
         for appointment in current_appointments
@@ -207,14 +225,21 @@ def main():
     ]
 
     if new_appointments:
+        print()
         print("🚨 NEUE TERMINE ERKANNT!")
+        print()
 
         for appointment in new_appointments:
             print(f"- {appointment['text']}")
             print(f"  {appointment['url']}")
 
+        # E-Mail senden
         send_email(new_appointments)
 
+        # Laufzeit bis zu diesem Zeitpunkt
+        runtime = time.perf_counter() - start_time
+
+        # Telegram-Nachricht
         telegram_message = (
             "🚨 MiWuLa KiTa-Termine!\n\n"
             "Neue Termine wurden gefunden:\n\n"
@@ -226,22 +251,32 @@ def main():
                 f"🔗 {appointment['url']}\n\n"
             )
 
+        telegram_message += (
+            f"⏱️ Laufzeit: {runtime:.2f} Sekunden"
+        )
+
         send_telegram(telegram_message)
 
     else:
         print("Keine neuen Termine.")
 
+        # Laufzeit berechnen
+        runtime = time.perf_counter() - start_time
+
+        # Erfolgreicher Heartbeat
         send_telegram(
             "🟢 MiWuLa KiTa Monitor\n\n"
-            "Die stündliche Prüfung wurde erfolgreich "
-            "durchgeführt.\n\n"
-            f"Gefundene Termine: {len(current_appointments)}\n"
+            "Die Prüfung wurde erfolgreich durchgeführt.\n\n"
+            f"📅 Termine gefunden: {len(current_appointments)}\n"
+            f"⏱️ Laufzeit: {runtime:.2f} Sekunden\n"
             "Keine neuen Termine."
         )
 
+    # Zustand speichern
     save_state(current_appointments)
 
     print()
+    print(f"Laufzeit: {runtime:.2f} Sekunden")
     print("Zustand gespeichert.")
     print("=" * 50)
 
@@ -254,6 +289,7 @@ if __name__ == "__main__":
         print("🔴 FEHLER:")
         print(str(error))
 
+        # Fehler ebenfalls an Telegram schicken
         try:
             send_telegram(
                 "🔴 MiWuLa KiTa Monitor FEHLER\n\n"
